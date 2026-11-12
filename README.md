@@ -24,6 +24,6 @@ All three files must sit in the same folder. Google Fonts (Fredoka + Noto Sans A
 - The last line of `game.js` is `})();` — the IIFE closer. Don't lose it, or nothing runs.
 - `index.html` intentionally has **no trailing newline** after `</html>` — doesn't matter for editors.
 - Images referenced by relative paths (`assets/pizza.png`, `assets/variants/...`). If you rename the folder, update those paths.
-
+This project is for a competition
 ## Reference copy
 `backup/index-single-file.html` is the original all-in-one version (byte-for-byte), kept only as a cross-check. Don't type from it.
