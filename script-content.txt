@@ -1,0 +1,146 @@
+# The 5-minute pitch - Pizza Bolt (recorded video edition)
+
+Total: about 730 spoken words = 5 minutes at a calm pace (146 words per minute). This is a recorded video: the face cam sits in one corner, and the code or the game fills the screen. Square brackets like [SHOW] and [DEMO] are screen actions, not spoken. The spoken words are the script itself - rehearse with a timer at least 3 times.
+
+| Time | Section | Words |
+| 0:00 - 0:30 | The problem | ~80 |
+| 0:30 - 1:10 | Why we built it | ~95 |
+| 1:10 - 2:00 | Live demo: one full order | ~110 |
+| 2:00 - 2:50 | Code moment 1: the cut checker | ~120 |
+| 2:50 - 3:35 | Code moment 2: it knows why you got it wrong | ~100 |
+| 3:35 - 4:25 | Code moment 3: 18 themes and music made of math | ~110 |
+| 4:25 - 4:50 | The numbers | ~60 |
+| 4:50 - 5:10 | The close | ~55 |
+
+PAGEBREAK
+# 0:00 - 0:30 - The problem
+
+! [SHOW] Recording layout: face cam small in one corner, the game's start screen filling the screen. Start recording, smile at the camera, then speak.
+
+Imagine you are six years old. Your teacher writes "one half plus one quarter" on the board. You add the top numbers and the bottom numbers... and get two sixths. Everyone laughs.
+
+But here is the thing adults forget: to a six-year-old, a pizza cut into 2 big pieces and a pizza cut into 6 small pieces look like the same amount of food. That is not laziness - it is one of the most common fraction misconceptions in the world, and worksheets do not fix it.
+
+# 0:30 - 1:10 - Why we built it
+
+So we asked: what actually makes learning stick? Not reading. Not watching. Teaching. When you have to explain something to someone else, your brain works differently - and you remember it.
+
+So we flipped the app. Instead of the app teaching the kid, the kid teaches the app. Meet Chef Bolt: a confident robot cook who is often wrong... on purpose. You cannot move forward until you correct him - and you can only correct him if you truly understand.
+
+One more thing: our game speaks two languages from day one - English and Arabic, right-to-left layout, Arabic numerals, everything.
+
+! [SHOW] Optional 5-second cutaway (jump cut): game.js line 8 (the English strings) then line 191 (the same strings in Arabic) - the two languages are literally the same keys, twice.
+
+# 1:10 - 2:00 - Live demo: one full order
+
+! [SHOW] Switch to the game window for this whole section. Record this take separately if you like - a recorded video allows jump cuts, so cut any fumbling and keep only the clean takes.
+
+Let me show you. Bolt takes an order: "Cut the pizza into four equal slices." I swipe to cut.
+
+! [DEMO] Make 2 swipes (4 slices) on the pizza.
+
+The game checks my cuts... fair! Now Bolt makes his claim: "The whole is split into four equal pieces, so each piece is one quarter." Is he right?
+
+! [DEMO] Answer Bolt's question.
+
+He is - I earn XP. Now the order goes in the oven... and here is the change challenge: the pizza costs 13 coins, I pay with 30 - what is my change?
+
+! [DEMO] Answer the change question.
+
+Money math, hidden inside a pizza delivery. I deliver, earn coins, and coins buy gear that actually changes gameplay - a better oven literally bakes faster.
+
+# 2:00 - 2:50 - Code moment 1: the cut checker
+
+! [SHOW] Switch to the editor with game.js. While saying "index.html is the skeleton", flash index.html lines 9-13 and line 177 (the script tag is the very last element). Then highlight game.js lines 1606-1612 while saying "measure the gaps", and select lines 1530-1548 while saying "snap it to the nearest fair position". Select the lines by dragging - a blue selection reads clearly on camera.
+
+Now the code. Three hand-written files. Zero libraries, zero frameworks. index.html is the skeleton - about 180 lines of structure. styles.css is the skin. And game.js is the brain: three thousand three hundred lines of pure JavaScript.
+
+I want to show you three moments inside it.
+
+Moment one: the cut checker. When you press "check the cuts", we do not count lines. We measure the gaps between your cut angles around the circle, and every gap must be within 20 percent of 360 divided by the denominator. And when you draw a cut, we do not just accept it - we snap it to the nearest mathematically fair position. A six-year-old should be learning fairness, not mouse precision.
+
+# 2:50 - 3:35 - Code moment 2: it knows why you got it wrong
+
+! [SHOW] First select game.js lines 1630-1633 (the failed check calling tagMisconception), then scroll to the function and select lines 1582-1592. Linger on line 1588 - the secret replay queue.
+
+Moment two: the game knows why you got it wrong. Kids make the same three fraction mistakes, so we named them: "unequal pieces are fair", "a bigger bottom number means a bigger piece", and mixing up halves and quarters. Every mistake quietly tags one of them.
+
+And here is my favorite line of code: when a misconception is tagged, the game builds a replay round - same fraction, different food - and slips it into the session, up to three times. The child never sees a warning. The game just quietly practices their weak spot. Parents see all of it in a grown-up report.
+
+# 3:35 - 4:25 - Code moment 3: 18 themes and music made of math
+
+! [SHOW] Three quick stops: styles.css lines 1-12 (the :root variables), styles.css line 31 (one theme overriding them all), then game.js line 2111 (the one line that switches a theme). On the music, select game.js lines 2627-2632. On the save file, flash line 542.
+
+Moment three: eighteen themes - and the file that changes them is one line of JavaScript. Why? Because every color in the game is a CSS variable - just eight variables. A theme does not restyle sixty components; it redefines eight numbers and the whole kitchen repaints itself. Even the prize wheel redraws in the new colors.
+
+And the music? There are no audio files anywhere. Every sound - the cutting, the oven, the background music loop - is synthesized live from oscillators, scheduled ahead of time so it never stutters.
+
+Oh, and the save file? We never trust it. Every load is validated field by field, so even a corrupted save cannot crash the game.
+
+# 4:25 - 4:50 - The numbers
+
+! [SHOW] Flash game.js line 375 (lessonPlans - the 18 lessons) and line 2552 (trophyDefs - the 12 trophies) while reciting the numbers.
+
+Quick numbers: 18 fraction lessons, times two languages. Five arcade modes for addition, subtraction, times tables and division. Twelve trophies. A gear shop, a prize wheel you earn by delivering, and a difficulty ladder from halves all the way to twenty-fourths. Every line typed by hand.
+
+# 4:50 - 5:10 - The close
+
+! [SHOW] Switch back to the game with Bolt visible, look straight into the camera, and slow down for this part.
+
+One last thing about Bolt: he never says "wrong." He says... "Hmm - let's check again."
+
+Because the goal was never a high score. The goal is a kid who looks at a real pizza, sees one piece bigger than the others, and says: "That's not fair."
+
+If we made one kid say that... we already won. Thank you!
+
+! [SHOW] Wave at Bolt on screen. Smile. Stop recording. If the last line was not clean, re-record just the close - it is the part judges remember most.
+
+PAGEBREAK
+# Shot list - the exact lines to highlight
+
+Practice the scroll path with this table until you can hit every stop without searching:
+
+| Time | File | Lines | What the camera shows |
+| 0:55 flash (optional) | game.js | 8 then 191 | The same strings in English and Arabic - the two-language moment |
+| 2:05 flash | index.html | 9-13 and 177 | The links in the head, and the script tag as the last element |
+| 2:20 | game.js | 1606-1612 | equalParts: measuring the gaps; the 20 percent verdict is line 1612 |
+| 2:40 | game.js | 1530-1548 | The snap: Math.round to the nearest fair slot; the pushes on 1542 and 1551 |
+| 3:00 | game.js | 1630-1633 | checkCuts: the failed check calls tagMisconception("unequalParts") |
+| 3:15 | game.js | 1582-1592 | tagMisconception: the secret replay queue (line 1588) and roundTotal++ |
+| 3:40 | styles.css | 1-12 | The :root variables - eight colors run the whole game |
+| 3:50 | styles.css | 31 | One theme line overriding them all |
+| 4:00 | game.js | 2111 | document.body.dataset.theme = ... - the "one line of JavaScript" |
+| 4:10 | game.js | 2627-2632 | The music scheduler: bars scheduled 1.4 s ahead, ticked every 420 ms |
+| 4:20 flash | game.js | 542 | One line of save validation: Number.isFinite(...) with Math.max(0, ...) |
+| 4:30 flash | game.js | 375 and 2552 | lessonPlans (18 lessons) and trophyDefs (12 trophies) |
+
+If a section's lines feel crowded on screen, select fewer lines - the selection should cover one idea the judges can read in 2 seconds.
+
+PAGEBREAK
+# Backup answers - if the judges ask
+
+| If they ask... | Say... |
+| What is a function? | A named recipe: inputs in, steps, one result out. Our whole level system is one line: XP / 30, decimals chopped, plus 1. |
+| How does cutting work in code? | Three listeners on the canvas: pointerdown records the start, pointermove drags the cutter, pointerup validates and snaps the cut. |
+| Where is the memory? | One object called stats, saved as JSON in localStorage, and re-validated on every load. |
+| Why no libraries? | Instant load, zero dependencies, and every line is ours - a game this size does not need a framework. |
+| How is the wheel fair? | The prize is picked by weighted random first; the spin animation just provably lands on it. |
+| Is it accessible? | Screen-reader live regions, focus rings, reduced-motion support, and full Arabic right-to-left. |
+
+For deeper answers, the full Q&A table is in Pizza-Bolt-Judge-Guide.pdf, Part 5.
+
+# If you only get 3 minutes
+
+Cut in this order and the story still holds:
+1. Drop the "numbers" section (4:25 - 4:50) completely.
+2. In the demo, stop after answering Bolt - skip the change challenge.
+3. Merge code moments 2 and 3 into one sentence each: "it knows why you got it wrong and secretly re-practices it" and "18 themes from 8 CSS variables, music from pure code."
+
+# Video recording tips
+- Zoom the editor first: font size 18-20 pixels (Command and + in most editors) so code is readable even on a phone-sized preview.
+- Open every stop beforehand: split the editor or use tabs so each shot-list location is one click or one scroll away. Rehearse the scroll path 3 times with the shot list open.
+- Select lines by dragging - the blue highlight is your pointer. Never say "somewhere here"; every second on camera should show exactly what you mean.
+- Record the demo and each code moment as separate takes, then join them. Jump cuts between sections look professional; fumbling inside one take does not.
+- Mic close (15-20 cm), quiet room, silent notifications (turn on Do Not Disturb).
+- Record a timing pass first, watch it once at 2x speed, fix the slow sections, then record the real takes.
+- The close is the most re-recorded 20 seconds in video history. Do it until it lands.

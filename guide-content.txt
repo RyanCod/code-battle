@@ -1,0 +1,292 @@
+# Part 0 - The big picture
+**Pizza Bolt** is a bilingual (English + Arabic) educational web game that teaches fractions to kids by having them **teach a robot chef named Bolt** how to share food fairly. The player cuts pizzas, flatbreads and chocolate bars into equal slices, answers Bolt's questions to prove the idea, then bakes, packs and delivers each order to earn coins. Coins buy kitchen gear, color themes and cosmetics; XP unlocks harder fractions; a built-in Math Arcade adds addition, subtraction, multiplication, division and mixed practice.
+
+The whole game lives in three hand-written files with **zero frameworks and zero libraries** - no React, no jQuery, no game engine, no icon pack, and no audio files anywhere.
+
+| File | Size | Role |
+| index.html (~178 lines) | 13 KB | Page structure: every panel, button and mount point, plus accessibility attributes. |
+| styles.css (~634 lines) | 58 KB | The entire visual system: layout, components, 20+ animations, and 18 color themes driven by CSS variables. |
+| game.js (~3,308 lines) | 218 KB | The engine: one IIFE containing ~90 functions organized into 15+ subsystems (state, i18n, curriculum, canvas cutting, quiz, orders, economy, shop, audio, arcade, wheel, modals). |
+
+! Judge sound-bite: "Everything is hand-built - the food is drawn on canvas, the music is synthesized with oscillators, the icons are inline SVG, and the gear art is generated SVG. There is not a single external JavaScript library."
+
+## Design philosophy
+- **Learning by teaching.** The child is the expert who corrects Bolt. When Bolt gets a claim wrong, the child teaches - which flips the usual drill-and-practice dynamic and builds confidence.
+- **Productive failure.** The pitch strip in the UI says it: "Not just right or wrong. Help Bolt find out how fair sharing works." Wrong cuts and wrong answers produce hints and retries, never penalties.
+- **Misconception detection.** The game quietly tags three well-known fraction misconceptions (believing unequal pieces are fair, believing a bigger denominator means a bigger piece, and mixing up a half and a quarter) and schedules extra practice when they appear.
+- **Motivation without pressure.** XP, levels, coins, streaks, 12 trophies, a prize wheel and a shop provide game feel, while the footer reassures: "No rush, chef. Every try helps Bolt learn!"
+- **Inclusive by default.** Full Arabic translation including right-to-left layout and native Arabic-Indic numerals, screen-reader live regions, strong keyboard focus rings, and reduced-motion support.
+
+PAGEBREAK
+# Part 1 - index.html: the skeleton
+The HTML is deliberately small: it defines the **permanent stage** and **mount points**; JavaScript fills everything dynamic. Two conventions drive everything: `data-i18n` marks elements whose text should be re-translated when the language switches, and `data-*` attributes carry small pieces of state that JS reads back.
+
+## 1.1 The head: meta and fonts
+- `meta charset="utf-8"` - required for the Arabic strings used throughout the app.
+- `meta viewport` with `viewport-fit=cover` - scales correctly on phones, including notched screens.
+- `meta theme-color` - paints the mobile browser toolbar in the app's cream color.
+- `meta description` plus the `title` - polish for browser tabs, bookmarks and link previews.
+- **Google Fonts**: `Fredoka` (a rounded, friendly display face for headings and buttons) plus `Noto Sans Arabic` (so Arabic text renders beautifully). Two `preconnect` links warm up the connection to the font servers so the fonts arrive faster.
+- `<link rel="stylesheet" href="styles.css">` - the split-out stylesheet, loaded in the head so the page never flashes unstyled.
+
+## 1.2 Fixed background layers
+- `canvas#matrixRain` - a full-screen canvas that normally sits empty and invisible. When the hidden Matrix theme is active, JS paints falling green code glyphs on it. It sits at the top of the body so every other element renders above it.
+- `div#toastRoot` (with `aria-live="polite"`) - JS drops short-lived notification toasts and confetti pieces here.
+- `div#overlayRoot` - the mount point for every modal: onboarding, shop, prize wheel, grown-up report, developer panel and the completion screen. Modals are created and destroyed in JS; the HTML just reserves the slot.
+
+## 1.3 The header (topbar)
+- **Brand block**: the logo image with explicit `width` and `height` (prevents layout shift while it loads), plus the app name and tagline, both tagged `data-i18n`.
+- **Tool row** - six controls, each an `icon-button` with an **inline SVG icon** (no icon font, no sprite, no library):
+| Button | Purpose |
+| languageButton | Toggles English / Arabic and re-renders the whole UI. |
+| soundButton | Contains two SVGs (speaker on / speaker off); CSS shows the right one via a `.muted` class. |
+| arcadeButton | Jumps into the Math Arcade tab that was played last. |
+| wheelButton | Opens the prize wheel modal. |
+| shopButton | Opens the gear and themes shop. |
+| reportButton | Opens the "Grown-up" report for parents and teachers. |
+
+## 1.4 The progress card
+A persistent dashboard strip: the **level badge**, the **Kitchen XP bar** (a `role="progressbar"` with `aria-valuemin`, `aria-valuemax` and `aria-valuenow`, filled by a width-styled inner div), the **streak counter** with a flame SVG that gains a `.hot` class at streak 3 or more, and the **coin pouch**.
+
+## 1.5 The kitchen: the main stage
+`section.kitchen` holds a two-column `.game-grid`: the main play column and a mascot sidebar. Inside the main column, top to bottom:
+- `nav#modeBar` - an empty nav that JS fills with the six mode tabs (Fractions plus five arcade games).
+- `section#arcadeLesson` - the arcade walkthrough panel: step text, an SVG model holder, a check question with an answer grid, and Back / Next buttons. Hidden until a math game is chosen.
+- `section#arcadePanel` - the arcade run panel: title, score, best score, the big question, four answer buttons, a feedback line, and "How to play" / "New run" buttons.
+- `section#levelLesson` - the fraction level lesson (the same teaching pattern: steps, SVG model, check question) plus a "money moment" panel that works out change from two prices.
+- **Order furniture**: `#orderRow` (a round pill with the order number and the food label), the big `h1#prompt` ("Cut the pizza into 4 equal slices..."), and `#instruction`.
+- `#cutStage` - the interactive food itself: a `stack-overlay` (visual hint), the `cut-counter` ("Cuts made: 2 / 4"), and `#pizzaWrap` containing the **520 x 520 canvas**, the floating `#cutterCursor` pizza-cutter image that follows the pointer, and `#cutHint`.
+- `#teachPanel` - the quiz-and-order panel: Bolt's claim, the answer grid, a collapsible step-by-step **solution panel**, a feedback line, and `#orderFlow` (oven image, stage icon, title and message, the **change challenge** with its own answer grid and solution panel, a progress track, and the Bake / Pack / Deliver step pills).
+- `#cutActions` - Undo cut / buy a cut guide / Check the cuts.
+- `#footerNote` - the reassurance line. `#questCard` - an offline "Kitchen Quest" (share a real sandwich at home).
+
+## 1.6 The mascot sidebar
+- `#bubble` (`aria-live="polite"`) - Bolt's speech bubble; every mood message lands here.
+- `img#bolt` - Chef Bolt, with a `data-still` attribute storing the neutral pose URL so JS can always reset his mood.
+- **Gear preview** - two small images showing the currently equipped cutter and oven, updated by JS when the player changes gear.
+
+## 1.7 Script placement and accessibility
+- `<script src="game.js"></script>` is the **last element in the body**: by the time it runs, every element above it exists, so no `defer` or DOM-ready wrapper is needed.
+- Accessibility is baked into the markup: `aria-live` regions (bubble, feedback, toasts, counters) announce changes to screen readers; `role="progressbar"` marks the XP and order bars; every image has meaningful `alt` text (or empty `alt` for decoration); `<bdi>` wraps numbers so they stay left-to-right inside Arabic sentences; and Escape closes any modal (handled in JS).
+
+! Judge sound-bite: "The HTML only defines structure and hooks - ids, `data-i18n`, `aria` roles. All 18 themes and every dynamic panel are generated by JS, so adding content never means touching the markup."
+
+PAGEBREAK
+# Part 2 - styles.css: the design system
+## 2.1 Design tokens
+The file opens with a `:root` block of **CSS custom properties** - the palette: `--paper` (card background), `--ink` (text), `--cream` (page background), plus accents `--coral`, `--yellow`, `--blue`, `--teal`, `--green`, `--pink`. Every component references only these variables.
+
+! Judge sound-bite: "That one decision is what makes 18 themes possible: a theme does not restyle 60 components - it redefines 8 variables, and the whole UI follows."
+
+## 2.2 Base rules and layout
+- A light reset, `button { font: inherit; color: inherit; }`, and a **strong focus style**: `:focus-visible { outline: 4px solid #e24e3d; }` so keyboard users never lose their place.
+- `.app` centers the layout at `min(1120px, 100%)`; `.topbar` and `.game-grid` are flex/grid; `.kitchen` is the big rounded card with an offset shadow.
+- Typography uses `clamp()` so headings and the pizza prompt scale smoothly between phone and desktop sizes.
+
+## 2.3 Components (highlights)
+- **Buttons**: `.toy-button` in primary / secondary / helper / danger flavors; `.icon-button` for the round toolbar buttons; hover and pressed states on all of them.
+- **Answer grid**: `grid-template-columns: repeat(auto-fit, minmax(...))` so 2 or 4 answer buttons lay out neatly at any width; `.answer-button` with a green "correct" state and a red "shake" state.
+- **Lesson and arcade cards**: step labels, body text, model holders, green/red feedback, mode tabs with an active coral state, score pips, and progress fills.
+- **Modals**: `.modal-backdrop` (fixed, dimmed, centered) and `.modal` (rounded card with a thick ink border and offset shadow - a hand-drawn sticker look).
+- **Shop cards, theme swatches, the trophy shelf and map items** - small card grids with consistent borders and hover states.
+- **Toasts and confetti**: a keyframed arrival for toasts, and confetti pieces that fall and rotate off-screen.
+- **Cutter cursor**: an absolutely-positioned image that follows the pointer and rotates with a CSS variable (`--cutter-angle`) set from JS - the cutter visually "aims" along the swipe.
+
+## 2.4 The theme engine
+`body[data-theme="..."]` selectors override the token variables. There are **18 looks in total**: Classic, plus five gear-set themes (Garden Grove, Bolt-Tech, Golden Chef, Candy & Chocolate - earned by collecting a full gear set), Matrix Mode (a hidden reward theme with a neon-green palette and the code-rain canvas), **10 purchasable color themes** (Ocean Bay, Sunset Grill, Forest Cabin, Mint Fresh, Cherry Pop, Lavender Field, Ice Rink, Retro Diner, Space Station, Volcano Kitchen), and Custom Kitchen (player-chosen colors, applied as inline CSS variables by JS).
+- The two **dark themes** (Space Station, Volcano Kitchen) flip the surface strategy: cards use translucent white at 5-8% so the dark background glows through - but **modals keep a solid `--paper` background**, because a large dialog must never look see-through. (That fix is a nice QA story: translucent cards look great over a solid page, but over the whole viewport they read as broken glass.)
+- The **Matrix theme** additionally switches fonts to monospace and activates the canvas animation behind the page.
+
+## 2.5 Motion design
+Over **20 `@keyframes`**: `shake` (wrong answers and unfair cuts), `bounce` and `jump` (Bolt's moods), `idle-bob` (at rest), `think` (a head-tilt while pondering), `wave`, `confetti-fall`, `toast-arrive`, `coin-pulse` (the pouch reacts to earnings), `float-up` (variant sparkle effects), `oven-glow` / `oven-flame` / `oven-wiggle` (baking), `pack-bounce`, `delivery-bob`, `lesson-step-in`, `solution-step-in` (staggered step reveals), `slice-confirm`, `cut-cursor` jiggles and more. Every animation is short (well under a second) and communicates state rather than decorating.
+- A `@media (prefers-reduced-motion: reduce)` block **turns animations off** for players who asked their OS for less motion - accessibility again.
+
+## 2.6 Responsive and RTL
+- Breakpoints at **760px** and **560px**: the game grid collapses to a single column, the canvas shrinks, the toolbar wraps, and the arcade answer grid becomes 2 x 2 on narrow screens.
+- An `.rtl` class (set by JS when Arabic is active) fine-tunes the few asymmetric details; because most layout is flex and grid with logical flow, the page mirrors naturally under `dir="rtl"`.
+
+PAGEBREAK
+# Part 3 - game.js: the engine
+The whole engine is one **IIFE** (an immediately-invoked function expression) starting with `"use strict"`. Nothing leaks into the global scope, so the game can never collide with another script. Inside, functions are grouped into subsystems; function declarations are hoisted, so definition order never matters.
+
+## 3.1 Foundation and content data
+- `$` is a `document.querySelector` shorthand; `ctx` is the pizza canvas 2D context; `storageKey = "chef-bolt-fair-share-v1"` names the localStorage save slot.
+- **`translations`** - roughly 200 string keys in both English and Arabic, with `{placeholder}` slots (for example "Cut the {food} into {n} equal slices"). Every visible string - including lesson text, hints and toasts - lives here.
+- **`lessonPlans`** - 18 fraction lessons per language. Each has a title, 3 teaching steps, a check question with answers, an SVG model spec, and a "money moment" (two prices plus the amount paid) for the change-making example.
+- **`variants`** - the 5 gear sets (Classic, Garden, Bolt-Tech, Golden Chef, Candy & Chocolate), each with prices, `bakeMs` (2,800 ms down to 1,350 ms - better ovens bake faster), `dragLimit` (0.62 down to 0.43 - better cutters accept shorter swipes), a signature 3-note chord, and palette colors.
+- **`bonusThemes`** - the 10 purchasable color themes with prices (15 to 35 coins) and three-swatch previews.
+- **Inline SVG art**: the Candy set's cutter, oven and food, plus all Custom Kitchen gear, are generated SVG strings encoded as `data:` URIs - art with no image files at all.
+- **`defaultStats`** - the full save schema: XP, coins, rounds, best streak, skills, misconceptions, shop (owned, equipped, themes, custom colors), wheel charges, arcade bests, trophies.
+
+## 3.2 State, saving and validation
+`loadStats()` reads the localStorage JSON and **sanitizes every field defensively**:
+- Numbers must be finite and are clamped to legal ranges (wheel charges max 3, boost max 10, coins non-negative).
+- Owned gear is filtered against a whitelist of valid ids, and the three Classic items are always re-granted so a fresh or corrupted save still works.
+- Theme choices are validated against what the player actually owns; custom colors are regex-checked as hex values.
+- There is even a **migration**: older saves that had Matrix active before the Candy set existed get the Candy set granted so they keep working.
+- `saveStats()` writes the JSON back; `structuredClone(defaultStats)` guarantees deep copies so saved and live state never share references.
+
+! Judge sound-bite: "We never trust the save file. Every load is validated and clamped field by field, so even a hand-edited or half-corrupted localStorage entry cannot crash the game."
+
+## 3.3 Translation engine
+- `t(key, values)` resolves the current language, falls back to English, then to the key itself, then substitutes `{placeholders}`.
+- `applyLanguage()` sets `<html lang>` and `dir="rtl"`, toggles a `.rtl` body class, rewrites every `[data-i18n]` element, and **re-renders all dynamic panels** - mission, lessons, quiz, order flow, shop, arcade panels, even the pizza's aria-label.
+- `localizedNumber(value)` uses `Intl.NumberFormat` with the active language, so Arabic shows **Arabic-Indic digits** natively (no manual character mapping).
+- `<bdi>` elements isolate numbers inside RTL sentences so mixed-direction text never scrambles.
+
+## 3.4 Curriculum and difficulty
+- **Levels**: every 30 XP (`levelsPer`); `currentLevel()` is simply XP divided by 30 plus 1.
+- **Denominator ladder**: level 1 starts with halves only; by level 14 the pool is 2, 3, 4, 5, 6, 8, 10, 12, 16, 20 and 24. Every deck is built from `availableDenominators()`.
+- **Mission deck**: for each food (pizza, flatbread) and each available denominator d, one order for every numerator from 1 to d - so the child meets 1/4, 2/4, 3/4 and 4/4 and feels that they are all "shares of 4". The deck is shuffled; chocolate-bar orders join at level 5. A base session is 12 orders.
+- **Question deck** builds eight kinds of quiz: compare two fractions; equivalent or not; "how many halves make a whole"; fair-share yes/no; numerator count; denominator count; "which fraction was served"; and at level 10+ **generated addition and subtraction of fractions** with LCM common denominators and GCD-simplified answers, distractor choices, and de-duplication by signature.
+- Decks rebuild automatically whenever they empty and on every level-up, so content always matches ability.
+- `skillKey(denominator)` maps each order to a learning-map bucket (halves, thirds, quarters, fifths/sixths, eighths, tenths/twelfths, sixteenths, 20/24ths, equal-sizing) which later feeds the grown-up report.
+
+## 3.5 The food canvas
+`drawPizza()` renders the current order:
+- **Round foods** draw the PNG artwork (`assets/pizza.png`, `assets/flatbread.png`) with a per-gear `ctx.filter` (for example Bolt-Tech saturates and hue-rotates the art). If the image has not loaded, a **procedural fallback** paints crust, base, sauce and toppings with ellipses - the game still works with missing assets.
+- **Chocolate** is fully procedural: a rounded-rect bar with four shaded tiles whose colors follow the equipped food style; Custom Kitchen mixes the player's chosen color with white at three ratios for depth.
+- **Cut marks**: each accepted cut is drawn twice - a thick cream halo with a thin dark core - so cuts read clearly over any artwork. A purchased **cut guide** overlays dashed lines showing the fair positions.
+- `cutBounds()` gives each food an ellipse (pizza 198 px, flatbread 208 px, chocolate 164 x 106) and `cutRadius(angle)` computes the exact polar radius of that ellipse, so cut lines always stop precisely on the crust.
+
+## 3.6 The cut mechanic (pointer events)
+- `pointerdown` **validates the start**: for round foods the touch must begin near the center hub (within 82% of the radius); for chocolate it must start near a bar edge. Invalid starts get an instant hint instead of a confusing cut.
+- `pointermove` moves the floating cutter image and **rotates it to the drag angle** (JS sets `--cutter-angle` from an `atan2` computation).
+- `pointerup` validates the gesture (a minimum swipe length scaled by the equipped cutter's `dragLimit`, moving from inside outward), then **snaps the cut to the nearest fair position**:
+  - Even denominators: one swipe equals one full diameter line - two opposite slices at once - snapped to the axis spacing for that denominator.
+  - Odd denominators: one swipe equals one radius cut, snapped to the nearest of the d angular slots.
+  - Duplicate cuts are detected with `angularDistance` and rejected with a hint.
+  - Chocolate requires one horizontal and one vertical cut, with straightness tolerance.
+- **Why snapping?** The child controls where roughly to cut, but the game guarantees the slices come out fair - so the lesson stays about equal sharing, not mouse precision. Gear perks (shorter required swipes) still give a skill-reward feel.
+- `undo` removes the last cut - a whole pair for even denominators, because they were made together.
+
+## 3.7 Fairness check and adaptive teaching
+- `checkCuts()` first verifies the right number of cuts, then runs `equalParts()`: it measures the **gaps between cut angles** around the circle and requires every gap to be within 20% of the ideal 360 divided by d. Chocolate simply requires both axes.
+- **Failure** shakes the card, breaks the streak, and tags the `unequalParts` misconception; after repeated misses an overlay literally **stacks the pieces** on top of each other for visual comparison - the "imagine stacking" teaching hint made visible.
+- `tagMisconception(key)` records the count in stats and **queues a replay round**: the same denominator on a different food, inserted into the session (up to 3 times). The game silently gives extra practice exactly where the child struggles.
+- **Success** opens the teach panel: Bolt makes a claim ("The whole is split into 3 equal pieces...") and the child confirms or corrects him.
+
+## 3.8 The quiz and generated worked solutions
+- Each question object carries a claim key, values, and choices; buttons are built from data, so a language switch re-renders them instantly.
+- **Wrong answer**: a kind-specific hint ("Imagine stacking the pieces..."), a shake animation, a low tone, and a streak reset - and the child may try again immediately.
+- **Correct answer**: locks the grid, awards +10 XP, grows the streak (best streak tracked; every 3rd streak pays a +3 coin bonus toast), increments the skill bucket, and starts the order flow.
+- **`questionSolutionSteps()`** is a highlight: for every question kind it **computes** a step-by-step solution - for advanced fractions it finds the LCM, rewrites both fractions, combines them, and simplifies with the GCD, narrating each step in the current language. The "Show me the steps" panel is therefore always mathematically exact, never canned text.
+
+## 3.9 Order flow and money math
+- After a correct answer the order runs through **baking, change, packing, delivering and served**, each stage animating a progress bar; the baking duration depends on the equipped oven, so gear changes gameplay.
+- An `orderFlowToken` guard means stale timers from a previous order can never advance a new one - a small but important concurrency guard.
+- **The change challenge**: prices scale with level (tiers up to 15 + 12 coins; payment in 10, 20 or 50), the four choices include near-misses; a wrong pick reveals the exact arithmetic as a hint; a correct pick earns praise and continues the flow. This quietly drills addition and subtraction with real money meaning.
+- `finishOrderFlow()` pays **+5 coins** (doubled if a x2 boost is active, consuming one boost charge), counts the delivery, and accrues wheel charges (one per 2 deliveries, maximum 3 stored).
+- After 12 orders a completion modal celebrates with confetti and offers the grown-up report.
+
+## 3.10 Economy, XP and trophies
+- `addCoins()` updates the pouch with a pulse animation; `gainXp()` adds XP and, on level-up, rebuilds both decks, pays a **+20 coin level-up reward**, and toasts the new level.
+- **12 trophies** are defined as a table of id, label and predicate (1 delivery, 10 deliveries, streaks of 5 and 10, levels 5 and 10, 150 coins saved, 9 gear pieces owned, Matrix unlocked, arcade score 10+, 10 lessons finished, wheel spun). `checkTrophies()` runs after every relevant event and fires a toast the moment one unlocks. All twelve appear on the Grown-up report's Trophy Shelf.
+
+## 3.11 Shop, gear and theme economy
+- `renderShop()` rebuilds the modal from data: five gear cards (each with cutter / oven / food items and computed perk percentages - for example "23% shorter swipe"), theme progress ("2 / 3 pieces"), the Matrix card, the 10 color-theme cards, and the Custom Kitchen card with six color pickers.
+- `handleGearAction()` implements buy (with price checks), equip (resets the active theme to Classic), apply-theme (equips the whole matching set), buy-theme, and unlock-custom (requires **level 15 + Matrix unlocked + 100 coins**).
+- Collecting all three pieces of a set unlocks that set's **full theme**; collecting all twelve themed pieces across four sets unlocks **Matrix Mode**.
+- `applyGearAppearance()` is the bridge to CSS: it sets `body[data-theme]`, and for Custom Kitchen writes inline custom properties - including derived colors like a 91%-whitened background and a 63%-whitened dot color computed in JS - regenerates the gear SVG art in the chosen colors, and tints the food through a canvas composite operation.
+
+## 3.12 Matrix rain (easter egg)
+A full-screen canvas animation: columns of glyphs from `01{}[]<>/\#` falling at randomized speeds, drawn with a translucent fade for trails. It is **DPR-aware** (sharp on retina screens), runs only in the Matrix theme, pauses when the tab is hidden, and respects `prefers-reduced-motion` - an easter egg with production discipline.
+
+## 3.13 Sound and music (Web Audio only)
+- `getAudio()` lazily creates a single `AudioContext` and resumes it if suspended (browser autoplay policy).
+- `playTone()` is the primitive: an oscillator plus a gain node with an exponential decay envelope.
+- **Gear personality in sound**: each set has three chord tones; Bolt-Tech plays triangle waves, Golden Chef square waves, Classic sine. Cutting, oven start and delivery each play a different little motif from the equipped set.
+- `playCustomKitchenFanfare()` schedules an 8-note bassline, four sawtooth chords and an ascending arpeggio, note by note, when the player unlocks Custom Kitchen.
+- **Background music**: a small **lookahead scheduler** - every 420 ms it schedules any bar that falls due within the next 1.4 s - looping a four-chord progression (Cmaj7, G, Am7, Fmaj9) as soft triangle pads over a sine bass, with a random pentatonic sparkle note per bar. It stops when muted, when the tab hides, or when the audio context is not running, and it starts only after the first pointer or key interaction (browser autoplay rules).
+
+! Judge sound-bite: "There are no audio files at all. Every sound - including the background music loop - is synthesized live with oscillators and gain envelopes, and the music uses a lookahead scheduler so it never drifts or stutters."
+
+## 3.14 The Math Arcade (in the main panel)
+- A `#modeBar` with six tabs: Fractions plus Addition Sprint, Subtraction Sprint, Times Table Trek, Division Dive and Mega Mix. `setGameMode(mode, force)` swaps the main panel; switching back to Fractions **restores the exact previous fraction state** (pending lesson, teach panel, cut progress), and re-clicking the active tab does nothing, so an in-progress run is never reset by accident.
+- **Every mode opens with its own interactive walkthrough** (stored in `arcadePlans` in both languages): three teaching steps, each with a generated SVG model, then a check question that must be answered before playing. Models are drawn by `renderArcadeModel()` in four kinds: dots that combine (addition), crossed-out dots (subtraction), dashed equal groups (multiplication and division), and a number line for counting on, counting back and skip-counting. All four pick up the active theme colors.
+- **Difficulty scales with level**: operands grow as `min(99, 8 + 2 x level)`, times tables up to `min(12, 2 + level / 2)`; subtraction never goes negative; division problems are built from a product so answers stay whole numbers.
+- A run: the score rises with each correct answer (+5 XP and +2 coins; choices include near-miss distractors); the first wrong answer ends the run, highlights the right choice and shows the best score; "New run" restarts; "How to play" replays the walkthrough. A per-mode `tutorialDone` flag means the walkthrough shows once per mode.
+
+## 3.15 Spin the wheel
+- Earned, not free: one charge per 2 deliveries, maximum 3 stored, shown in the modal.
+- Eight **weighted** prizes (weights sum to 100): 5, 10, 15, 25 and 50 coins, +15 and +30 XP, and a x2 double-coins boost.
+- **The landing is deterministic**: the prize is chosen by weighted random first, then the target rotation is computed backwards from the segment geometry so the pointer provably stops on that segment (plus a small visual jitter). The animation is 6 full turns over 4.2 seconds with a cubic ease-out, and a tick tone plays on every segment crossing. The wheel is drawn on canvas from the **live theme palette**, so it always matches the active theme.
+
+## 3.16 Modals: onboarding, dev panel, report
+- **Onboarding**: a friendly 3-step intro (cut, question, order), a name field (max 18 characters) that personalizes Bolt's greetings, and an in-modal language switch. Easter egg: typing the code **2010** as the name opens the developer panel.
+- **Developer panel**: add or set coins, set the level (rebuilding both decks), unlock all gear and themes, quick theme jumps, and a full account reset guarded by a `confirm()` dialog.
+- **Grown-up report**: totals (orders, XP, best streak), the **learning map** (a skill is marked "getting it" after 2+ correct practices), the **misconceptions section** with detection counts, the 12-trophy shelf, a name editor, and the real-life Kitchen Quest.
+- All modals share one pattern: a backdrop in `#overlayRoot`, `role="dialog"` with `aria-modal="true"`, and closing by clicking outside or pressing Escape.
+
+## 3.17 Toasts and feedback everywhere
+`showToast()` raises a 1.1-second message (optionally styled as a milestone toast) and rains **28 confetti pieces** colored from the active theme. Combined with card shakes, green flashes on correct answers, pouch pulses and Bolt's changing moods, **every action answers the child within a second**.
+
+## 3.18 Boot sequence and lifecycle
+At the bottom of the file: build the mission and question decks, take the first order, restore the saved game mode (so an arcade session survives a reload), run `applyLanguage()`, run `updateProgress()`, then either reopen the saved mode, show the pending level lesson, or open onboarding. Escape-key closing, window resize handling and tab-visibility handling complete the lifecycle.
+
+PAGEBREAK
+# Part 4 - How the three files cooperate
+| Layer | Provides | Consumed by |
+| index.html | Stable hooks: element ids, `data-i18n` keys, `aria` roles, canvases, empty mount points. | game.js queries these by id; screen readers read the aria attributes. |
+| styles.css | The visual system: component classes, keyframe animations, and token variables that themes override. | game.js toggles classes (`hidden`, `shake`, `correct`, `hot`, `muted`), sets `data-theme`, and writes inline CSS variables for the custom theme. |
+| game.js | All state, all dynamic rendering, all simulation (cuts, quiz math, audio, wheel physics). | Writes text, builds elements, draws on both canvases, saves to localStorage. |
+
+## One full loop, step by step
+1. Boot: JS builds both decks from the level's denominator pool, draws the first order on the canvas, and Bolt asks for help.
+2. The child swipes cuts; JS validates, snaps to fair slots and redraws the canvas while CSS animates the cutter.
+3. "Check the cuts": JS measures the gaps. If unfair - hint, shake, misconception tagged, replay round queued. If fair - the teach panel opens.
+4. Bolt claims something; the child answers; JS grades it, awards +10 XP, updates the XP bar, fires trophy checks, and may pay a streak bonus.
+5. "Put it in the oven": the flow animates baking (the oven gear decides the speed), then the change challenge drills money math.
+6. Packing, delivering, served: +5 coins (x2 with a boost), a wheel charge may unlock, confetti falls.
+7. Coins buy gear or themes in the shop; applying a theme is one `data-theme` change - CSS repaints the world, and the wheel and confetti follow the new palette.
+8. Reload: everything is restored from the validated localStorage save - mode, progress, gear, themes and trophies.
+
+PAGEBREAK
+# Part 5 - Judge quick reference
+## Numbers to remember
+| Thing | Value |
+| XP per level | 30 (quiz +10, arcade correct +5, wheel up to +30) |
+| Coins per delivered order | 5 (doubled by the x2 boost) |
+| Arcade correct answer | +2 coins and +5 XP |
+| Streak bonus | +3 coins on every 3rd correct teach answer |
+| Level-up reward | +20 coins and fresh decks |
+| Cut guide (hint lines) | 2 coins per order |
+| Gear prices | 7 to 20 coins per piece; 15 pieces across 5 sets |
+| Bonus color themes | 10 themes, 15 to 35 coins |
+| Custom Kitchen | level 15 + Matrix unlocked + 100 coins |
+| Matrix Mode | all 12 themed gear pieces (4 sets of 3) |
+| Wheel charges | 1 per 2 deliveries, max 3 stored |
+| Lessons | 18 fraction lessons x 2 languages; walkthroughs for 5 arcade modes x 2 languages |
+| Trophies | 12 |
+| Orders per session | 12, plus up to 3 adaptive replays |
+| Denominator ladder | 2 up to 24, gated by level 1 to 14 |
+
+## Questions the judges may ask
+| Question | Strong answer |
+| Why no frameworks or libraries? | A game this size does not need a virtual DOM or state libraries. Vanilla JS means instant load, zero dependencies, and full control of the two canvases and Web Audio. It also keeps the project teachable - every line is ours. |
+| How do 18 themes stay maintainable? | Every color is a CSS custom property; a theme only redefines the tokens. Dark themes additionally re-surface translucent cards, and modals keep a solid background so dialogs never look see-through. |
+| How is Arabic supported beyond translation? | `dir="rtl"` plus an `.rtl` class, the Noto Sans Arabic font, `Intl.NumberFormat` for Arabic-Indic digits, and `<bdi>` isolation so numbers never scramble RTL sentences - including in the generated math solutions. |
+| Is the game adaptive? | Yes, on three levels: difficulty ladders (denominators by level, arcade operands by level), misconception tagging with counts, and an adaptive replay queue that re-inserts a failed concept as a new order on a different food. |
+| How do you guarantee cut fairness for a 6-year-old? | Pointer gestures are validated then snapped to mathematically fair slots before rendering, and a gap analysis (20% tolerance) re-checks the result. The child learns the concept; the math is guaranteed. |
+| How can the wheel always land on the announced prize? | The prize is drawn by weighted random first; the final rotation is then computed from the segment geometry so the pointer provably rests on that segment. The spinning animation is cosmetic. |
+| Where does the music come from? | Oscillators and gain envelopes via the Web Audio API, scheduled 1.4 seconds ahead by a 420 ms interval loop - a chord progression with a random pentatonic melody note. No audio files anywhere. |
+| How is progress saved safely? | Every load is validated field by field (types, ranges, whitelists, regex-checked colors), clamped, migrated where the schema changed, and re-granted the starter gear so a damaged save can never break the game. |
+| What about accessibility? | aria-live regions everywhere, progressbar roles, strong focus-visible rings, Escape closes dialogs, prefers-reduced-motion disables all animation, and canvases carry descriptive aria-labels. |
+
+PAGEBREAK
+# Part 6 - Glossary
+| Term | Meaning |
+| IIFE | Immediately Invoked Function Expression - a function that runs once at load and keeps its variables private; used to wrap the whole engine so nothing pollutes the global scope. |
+| DOM | The browser's live tree of HTML elements; JS reads and rewrites it to update the game. |
+| Canvas 2D | A bitmap drawing surface with a JavaScript drawing API - used for the food, the prize wheel and the Matrix rain. |
+| CSS custom property | A variable defined in CSS (like `--coral`) that components reference; themes override the variables instead of restyling every component. |
+| data URI | A file-less resource embedded as a string - here, the generated SVG gear art. |
+| localStorage | Browser key-value storage that persists between visits; the save slot is "chef-bolt-fair-share-v1". |
+| aria-live | A screen-reader contract: changes inside this element are announced automatically. |
+| role="progressbar" | Tells assistive technology that an element shows progress, with min, max and current values. |
+| prefers-reduced-motion | A media query that detects users who asked their OS for less animation; the game disables its animations for them. |
+| LCM / GCD | Least common multiple (for common denominators) and greatest common divisor (for simplifying) - both computed in JS for generated questions and solutions. |
+| Lookahead scheduler | Scheduling audio slightly ahead of time so timing is sample-accurate; the music loop schedules bars 1.4 seconds ahead every 420 ms. |
+| Ease-out | An animation curve that starts fast and settles gently - used for the wheel spin. |
+| DPR | Device pixel ratio, the screen density multiplier; the Matrix canvas scales by it so glyphs stay sharp on retina displays. |
+| bdi | An HTML element that isolates bidirectional text, keeping numbers reading left-to-right inside Arabic sentences. |

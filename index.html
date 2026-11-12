@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f4ed">
+  <meta name="description" content="A playful, bilingual fraction-learning game where kids teach Chef Bolt to share fairly.">
+  <title>Pizza Bolt: Fair Shares, Happy Chefs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="matrixRain" aria-hidden="true"></canvas>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="assets/pizza-bolt-logo.png" alt="Pizza Bolt: a fun fractions learning app" width="768" height="768">
+        <span class="brand-copy"><span class="brand-name" data-i18n="brand">Pizza Bolt</span><span class="brand-tagline" data-i18n="brandTagline">The fair-share kitchen</span></span>
+      </div>
+      <div class="tool-row">
+        <button class="icon-button" id="languageButton" aria-label="Switch language" title="English / العربية"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg></button>
+        <button class="icon-button" id="soundButton" aria-label="Toggle sound" title="Toggle sound"><svg class="sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4zM17 9a5 5 0 0 1 0 6M19 6a9 9 0 0 1 0 12"></path></svg><svg class="sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4zM17 9l5 6m0-6-5 6"></path></svg></button>
+        <button class="icon-button" id="arcadeButton" aria-label="Math games" title="Math Games"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5"></rect><path d="M7 10.5v4M5 12.5h4M15.5 11h.01M18 13.5h.01M16.5 14h.01"></path></svg></button>
+        <button class="icon-button" id="wheelButton" aria-label="Spin the prize wheel" title="Spin the Wheel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18M3 12h18M12 12 5.6 5.6M12 12l6.4-6.4M12 12l-6.4 6.4M12 12l6.4 6.4"></path></svg></button>
+        <button class="report-button shop-button" id="shopButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 8H6M10 21h.01M18 21h.01"></path></svg><span data-i18n="shopButton">Shop</span></button>
+        <button class="report-button" id="reportButton"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6v1"></path></svg><span data-i18n="grownup">Grown-up</span></button>
+      </div>
+    </header>
+
+    <section class="progress-card" aria-label="Game progress">
+      <span class="level-badge"><span data-i18n="level">LEVEL</span> <span id="levelValue">1</span></span>
+      <div class="xp-area">
+        <div class="xp-line"><span data-i18n="xp">Kitchen XP</span><span id="xpLabel">0 / 30</span></div>
+        <div class="xp-track" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0"><div class="xp-fill" id="xpFill"></div></div>
+      </div>
+      <div class="streak" id="streakBox" aria-label="Streak"><svg class="streak-flame" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a7 7 0 0 0 7-7c0-3.1-1.8-5.3-4.1-7.6.1 2.2-1 3.5-2.1 4.2C12.4 7.2 9.6 4.6 7 3c.4 3.6-.3 5.3-1.4 7.2A7.3 7.3 0 0 0 12 21z"></path></svg><span id="streakValue">0</span></div>
+      <div class="coin-pouch" aria-label="Coins"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M15 8.5c-.7-.7-1.6-1-2.8-1-1.4 0-2.4.7-2.4 1.8 0 2.8 5.2 1.2 5.2 4.3 0 1.2-1.1 2-2.7 2-1.1 0-2.2-.4-3-1.2M12 6v12"></path></svg><span id="coinValue">0</span></div>
+    </section>
+    <div class="pitch-strip"><span data-i18n="pitchText">Teach Bolt how to share every order fairly.</span></div>
+
+    <section class="kitchen" id="gameCard">
+      <div class="game-grid">
+        <div class="game-main">
+          <nav class="mode-bar" id="modeBar" aria-label="Game modes"></nav>
+          <section class="level-lesson hidden" id="arcadeLesson" aria-live="polite">
+            <p class="lesson-badge"><span data-i18n="arcadeLessonBadge">Mini lesson</span><span class="lesson-separator" aria-hidden="true">·</span><span id="arcadeLessonProgress"></span></p>
+            <h2 id="arcadeLessonTitle"></h2>
+            <div class="lesson-step-content" id="arcadeLessonStepContent">
+              <p class="lesson-step-label" id="arcadeLessonStepLabel"></p>
+              <p class="lesson-step-body" id="arcadeLessonStepBody"></p>
+            </div>
+            <div class="lesson-model" id="arcadeLessonModel" role="img"></div>
+            <div class="lesson-check hidden" id="arcadeLessonCheck">
+              <p class="lesson-check-question" id="arcadeLessonCheckQuestion"></p>
+              <div class="answer-grid" id="arcadeLessonAnswers"></div>
+              <p class="lesson-feedback" id="arcadeLessonFeedback" aria-live="polite"></p>
+            </div>
+            <div class="lesson-actions">
+              <button class="toy-button secondary hidden" id="arcadeLessonBackButton" type="button" data-i18n="lessonBack">Back</button>
+              <button class="toy-button primary" id="arcadeLessonButton" type="button" data-i18n="lessonContinue">Next step</button>
+            </div>
+          </section>
+          <section class="arcade-panel hidden" id="arcadePanel" aria-live="polite">
+            <div class="arcade-scorebar">
+              <span class="arcade-title" id="arcadeRunTitle"></span>
+              <span><span data-i18n="arcadeScore">Score</span>: <bdi id="arcadeScoreValue">0</bdi></span>
+              <span id="arcadeBestValue"></span>
+            </div>
+            <p class="arcade-question" id="arcadeQuestion"></p>
+            <div class="answer-grid" id="arcadeAnswers"></div>
+            <p class="arcade-feedback" id="arcadeFeedback" aria-live="polite"></p>
+            <div class="action-row">
+              <button class="toy-button helper" id="arcadeHowButton" type="button" data-i18n="howToPlay">How to play</button>
+              <button class="toy-button primary hidden" id="arcadeNewButton" type="button" data-i18n="arcadeAgain">New run</button>
+            </div>
+          </section>
+          <section class="level-lesson hidden" id="levelLesson" aria-live="polite">
+            <p class="lesson-badge"><span data-i18n="lessonBadge">LEVEL</span> <bdi id="lessonLevel"></bdi><span class="lesson-separator" aria-hidden="true">·</span><span id="lessonProgress"></span></p>
+            <h2 id="lessonTitle"></h2>
+            <div class="lesson-step-content" id="lessonStepContent">
+              <p class="lesson-step-label" id="lessonStepLabel"></p>
+              <p class="lesson-step-body" id="lessonStepBody"></p>
+            </div>
+            <div class="lesson-model" id="lessonModel" role="img"></div>
+            <div class="lesson-check hidden" id="lessonCheck">
+              <p class="lesson-check-question" id="lessonCheckQuestion"></p>
+              <div class="answer-grid" id="lessonAnswers"></div>
+              <p class="lesson-feedback" id="lessonFeedback" aria-live="polite"></p>
+            </div>
+            <div class="lesson-money-note">
+              <strong data-i18n="lessonMoneyLabel">A money moment</strong>
+              <p data-i18n="lessonMoneyGuide"></p>
+              <div class="lesson-money-example" id="lessonMoneyExample"></div>
+            </div>
+            <div class="lesson-actions">
+              <button class="toy-button secondary hidden" id="lessonBackButton" type="button" data-i18n="lessonBack">Back</button>
+              <button class="toy-button primary" id="lessonButton" type="button" data-i18n="lessonContinue">Next</button>
+            </div>
+          </section>
+          <div class="order-row" id="orderRow">
+            <span class="round-pill" id="roundLabel">ORDER 1 / 6</span>
+            <span class="food-label" id="foodLabel">Pizza</span>
+          </div>
+          <h1 class="prompt" id="prompt"></h1>
+          <p class="instruction" id="instruction"></p>
+          <div class="cut-stage" id="cutStage">
+            <div class="stack-overlay hidden" id="stackOverlay" aria-live="polite"></div>
+            <div class="cut-counter" id="cutCounter" aria-live="polite"></div>
+            <div class="pizza-wrap" id="pizzaWrap">
+              <canvas id="pizza" width="520" height="520" role="img" aria-label="Pizza. Draw equal slices by dragging from the center to the crust."></canvas>
+              <img class="cutter-cursor" id="cutterCursor" src="assets/variants/classic-cutter.png" alt="" aria-hidden="true">
+              <div class="cut-hint" id="cutHint"></div>
+            </div>
+          </div>
+          <div class="teach-panel hidden" id="teachPanel">
+            <h2 class="teach-heading" data-i18n="teachTitle">Teach Chef Bolt!</h2>
+            <p class="chef-claim" id="chefClaim"></p>
+            <div class="answer-grid" id="answerGrid"></div>
+            <button class="toy-button helper solution-toggle" id="questionHelpButton" type="button" aria-expanded="false" aria-controls="questionSolution"></button>
+            <section class="solution-panel hidden" id="questionSolution" aria-live="polite">
+              <h3 id="questionSolutionTitle"></h3>
+              <ol class="solution-steps" id="questionSolutionSteps"></ol>
+            </section>
+            <p class="feedback" id="feedback" aria-live="polite"></p>
+            <div class="order-flow hidden" id="orderFlow" aria-live="polite">
+              <div class="flow-visual" id="flowVisual" aria-hidden="true">
+                <img class="oven-icon" id="flowOven" src="assets/variants/classic-oven.png" alt="">
+                <span class="flow-icon hidden" id="flowIcon"></span>
+              </div>
+              <strong class="flow-title" id="flowTitle"></strong>
+              <p class="flow-message" id="flowMessage"></p>
+              <div class="change-challenge hidden" id="changeChallenge">
+                <p class="change-prompt" id="changePrompt"></p>
+                <button class="toy-button helper solution-toggle" id="changeHelpButton" type="button" aria-expanded="false" aria-controls="changeSolution"></button>
+                <section class="solution-panel hidden" id="changeSolution" aria-live="polite">
+                  <h3 id="changeSolutionTitle"></h3>
+                  <ol class="solution-steps" id="changeSolutionSteps"></ol>
+                </section>
+                <div class="answer-grid" id="changeAnswerGrid"></div>
+                <p class="change-feedback" id="changeFeedback" aria-live="polite"></p>
+              </div>
+              <div class="flow-track" id="flowTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Order progress"><div class="flow-progress" id="flowProgress"></div></div>
+              <div class="flow-steps" id="flowSteps">
+                <span class="flow-step" data-flow-step="baking"><span class="step-number">1</span><span data-i18n="bakeStep">Bake</span></span>
+                <span class="flow-step" data-flow-step="packing"><span class="step-number">2</span><span data-i18n="packStep">Pack</span></span>
+                <span class="flow-step" data-flow-step="delivering"><span class="step-number">3</span><span data-i18n="deliverStep">Deliver</span></span>
+              </div>
+            </div>
+            <div class="next-row"><button class="toy-button primary hidden" id="nextButton" data-i18n="next">Next order</button></div>
+          </div>
+          <div class="action-row" id="cutActions">
+            <button class="toy-button secondary" id="undoButton" data-i18n="undo">Undo cut</button>
+            <button class="toy-button helper" id="helpButton" type="button"></button>
+            <button class="toy-button primary" id="checkButton" data-i18n="check">Check the cuts</button>
+          </div>
+          <p class="footer-note" id="footerNote" data-i18n="footer">No rush, chef. Every try helps Bolt learn!</p>
+        </div>
+        <aside class="mascot-column" aria-label="Chef Bolt">
+          <div class="bubble" id="bubble" aria-live="polite"></div>
+          <img class="bolt" id="bolt" src="assets/chef-bolt.png" data-still="assets/chef-bolt.png" alt="Chef Bolt, your cheerful robot chef" width="220" height="264">
+          <div class="kitchen-tools">
+            <div class="gear-preview"><img id="equippedCutter" src="assets/variants/classic-cutter.png" alt=""><img id="equippedOven" src="assets/variants/classic-oven.png" alt=""></div>
+            <p class="tools-caption" data-i18n="toolsCaption">SLICE · BAKE · SHARE FAIRLY</p>
+          </div>
+        </aside>
+      </div>
+      <div class="quest-card" id="questCard">
+        <div class="quest-copy"><strong data-i18n="questTitle">Kitchen Quest</strong><span data-i18n="questText">At home, share a sandwich into two fair halves!</span></div>
+      </div>
+    </section>
+  </main>
+  <div id="overlayRoot"></div>
+  <div id="toastRoot" aria-live="polite"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>
